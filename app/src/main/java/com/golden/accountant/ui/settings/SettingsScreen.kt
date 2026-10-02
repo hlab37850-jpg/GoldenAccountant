@@ -50,7 +50,7 @@ fun SettingsScreen(db: AppDatabase, onNavigate: (String) -> Unit, onBack: () -> 
                     IconBadge(Icons.Default.Person); Spacer(Modifier.width(14.dp)); Text("تسجيل الخروج", Modifier.weight(1f), color = MaterialTheme.colorScheme.error)
                 }
                 HorizontalDivider()
-                Text("المحاسب الذهبي — الإصدار 1.0.0", Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
+                Text("المحاسب الذهبي — الإصدار 1.0.1", Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -61,9 +61,9 @@ fun SettingsScreen(db: AppDatabase, onNavigate: (String) -> Unit, onBack: () -> 
             onDismissRequest = { changePw = false }, title = { Text("تغيير كلمة المرور") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(old, { old = it }, label = { Text("الحالية") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
-                    OutlinedTextField(new, { new = it }, label = { Text("الجديدة") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
-                    OutlinedTextField(again, { again = it }, label = { Text("تأكيد الجديدة") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                    OutlinedTextField(old, { old = it }, label = { Text("الحالية") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+                    OutlinedTextField(new, { new = it }, label = { Text("الجديدة") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+                    OutlinedTextField(again, { again = it }, label = { Text("تأكيد الجديدة") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
                 }
             },
             confirmButton = {

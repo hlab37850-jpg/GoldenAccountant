@@ -43,11 +43,11 @@ fun LoginScreen(db: AppDatabase) {
         if (setupFor == null) OutlinedTextField(userName, { userName = it }, Modifier.fillMaxWidth(), label = { Text("اسم المستخدم") }, singleLine = true)
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("كلمة المرور") }, singleLine = true,
-            visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+            visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
         if (setupFor != null) {
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(confirm, { confirm = it }, Modifier.fillMaxWidth(), label = { Text("تأكيد كلمة المرور") }, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
         }
         error?.let { Spacer(Modifier.height(8.dp)); Text(it, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(16.dp))
