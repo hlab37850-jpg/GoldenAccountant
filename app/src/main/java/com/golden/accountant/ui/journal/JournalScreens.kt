@@ -49,8 +49,8 @@ fun JournalListScreen(db: AppDatabase, opening: Boolean, onNew: () -> Unit, onBa
         snackbarHost = { SnackbarHost(snack) },
         floatingActionButton = { if (canNew) FloatingActionButton(onClick = onNew, containerColor = Gold.Primary) { Icon(Icons.Default.Add, "قيد جديد", tint = Color.White) } },
     ) { pad ->
-        if (entries.isEmpty()) Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { Text("لا توجد قيود يدوية") }
-        else LazyColumn(Modifier.fillMaxSize().padding(pad)) {
+        if (entries.isEmpty()) Box(Modifier.fillMaxSize().padding(pad).imePadding(), contentAlignment = Alignment.Center) { Text("لا توجد قيود يدوية") }
+        else LazyColumn(Modifier.fillMaxSize().padding(pad).imePadding()) {
             items(entries, key = { it.id }) { e ->
                 Row(Modifier.fillMaxWidth().clickable { open = e }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text(e.note, fontWeight = FontWeight.Bold); Text(e.date, style = MaterialTheme.typography.bodySmall) }
@@ -110,7 +110,7 @@ fun JournalEntryScreen(db: AppDatabase, opening: Boolean, onBack: () -> Unit) {
         snackbarHost = { SnackbarHost(snack) },
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
-                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("مدين ${money(dr)}   دائن ${money(cr)}", style = MaterialTheme.typography.bodySmall)
                         Text(if (balanced) "القيد متوازن" else "الفرق: ${money(diff)}", color = if (balanced) Gold.Primary else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
@@ -127,7 +127,7 @@ fun JournalEntryScreen(db: AppDatabase, opening: Boolean, onBack: () -> Unit) {
             }
         },
     ) { pad ->
-        LazyColumn(Modifier.fillMaxSize().padding(pad).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(Modifier.fillMaxSize().padding(pad).imePadding().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -84,7 +84,7 @@ fun VoucherScreen(db: AppDatabase, initialType: Int, id: Long, onList: (Int) -> 
         },
         snackbarHost = { SnackbarHost(snack) },
     ) { pad ->
-        Column(Modifier.fillMaxSize().padding(pad).padding(12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxSize().padding(pad).imePadding().padding(12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (id == 0L) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(type == TrType.RECEIPT, { type = TrType.RECEIPT; no = 0 }, { Text("سند قبض") })
                 FilterChip(type == TrType.PAYMENT, { type = TrType.PAYMENT; no = 0 }, { Text("سند صرف") })
@@ -139,8 +139,8 @@ fun VouchersListScreen(db: AppDatabase, type: Int, onNew: () -> Unit, onOpen: (L
         topBar = { GoldTopBar("قائمة " + title(type), onBack) },
         floatingActionButton = { FloatingActionButton(onClick = onNew, containerColor = Gold.Primary) { Icon(Icons.Default.Add, "جديد", tint = Color.White) } },
     ) { pad ->
-        if (vouchers.isEmpty()) Box(Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) { Text("لا توجد سندات") }
-        else LazyColumn(Modifier.fillMaxSize().padding(pad)) {
+        if (vouchers.isEmpty()) Box(Modifier.fillMaxSize().padding(pad).imePadding(), contentAlignment = Alignment.Center) { Text("لا توجد سندات") }
+        else LazyColumn(Modifier.fillMaxSize().padding(pad).imePadding()) {
             items(vouchers, key = { it.id }) { v ->
                 Row(Modifier.fillMaxWidth().clickable { onOpen(v.id) }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {

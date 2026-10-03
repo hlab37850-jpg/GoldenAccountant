@@ -82,7 +82,7 @@ fun InvoiceScreen(db: AppDatabase, kind: InvoiceKind, billId: Long, onBack: () -
         snackbarHost = { SnackbarHost(snack) },
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
-                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("الإجمالي", style = MaterialTheme.typography.labelMedium)
                         Text(money(t.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Gold.Primary)
@@ -92,7 +92,7 @@ fun InvoiceScreen(db: AppDatabase, kind: InvoiceKind, billId: Long, onBack: () -
             }
         },
     ) { pad ->
-        LazyColumn(Modifier.fillMaxSize().padding(pad).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(Modifier.fillMaxSize().padding(pad).imePadding().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // رأس الفاتورة: تاريخ، نقد/آجل، عملة وسعرها، مخزن
             item {
                 Spacer(Modifier.height(4.dp))

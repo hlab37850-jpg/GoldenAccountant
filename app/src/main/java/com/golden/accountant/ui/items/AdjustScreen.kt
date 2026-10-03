@@ -46,7 +46,7 @@ fun AdjustScreen(db: AppDatabase, onBack: () -> Unit) {
         snackbarHost = { SnackbarHost(snack) },
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
-                Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("أصناف: ${lines.size}", Modifier.weight(1f), fontWeight = FontWeight.Bold)
                     Button(enabled = canNew && lines.isNotEmpty(), onClick = {
                         scope.launch {
@@ -66,7 +66,7 @@ fun AdjustScreen(db: AppDatabase, onBack: () -> Unit) {
             }
         },
     ) { pad ->
-        LazyColumn(Modifier.fillMaxSize().padding(pad).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.fillMaxSize().padding(pad).imePadding().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { adjNames.forEach { (t, n) -> FilterChip(type == t, { type = t }, { Text(n) }) } }

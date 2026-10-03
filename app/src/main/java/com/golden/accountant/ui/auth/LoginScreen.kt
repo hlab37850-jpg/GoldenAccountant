@@ -34,7 +34,7 @@ fun LoginScreen(db: AppDatabase) {
     LaunchedEffect(Unit) { setupFor = db.users().adminWithoutPassword(); ready = true }
     if (!ready) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }; return }
 
-    Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Text("المحاسب الذهبي", style = MaterialTheme.typography.headlineLarge, color = Gold.Primary, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
         Text(if (setupFor != null) "أول تشغيل: عيّن كلمة مرور المدير" else "تسجيل الدخول")

@@ -63,7 +63,7 @@ fun SettingsScreen(db: AppDatabase, onNavigate: (String) -> Unit, onBack: () -> 
                     IconBadge(Icons.Default.Person); Spacer(Modifier.width(14.dp)); Text("تسجيل الخروج", Modifier.weight(1f), color = MaterialTheme.colorScheme.error)
                 }
                 HorizontalDivider()
-                Text("المحاسب الذهبي — الإصدار 1.1.0", Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
+                Text("المحاسب الذهبي — الإصدار 1.2.0", Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
             }
         }
     }

@@ -87,7 +87,7 @@ fun TrialBalanceScreen(db: AppDatabase, onBack: () -> Unit) {
                 if (rows.isEmpty()) item { Text("لا توجد حركات", Modifier.padding(24.dp)) }
             }
             Surface(color = Gold.Light) {
-                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp)) {
                     Text("مدين ${money(dr)}   دائن ${money(cr)}", fontWeight = FontWeight.Bold)
                     Text(if (ok) "الميزان متوازن" else "الميزان غير متوازن!", color = if (ok) Gold.Primary else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
@@ -254,7 +254,7 @@ fun StockReportScreen(db: AppDatabase, onBack: () -> Unit) {
                 if (data == null) item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
                 else if (shown.isEmpty()) item { Text("لا توجد أصناف", Modifier.padding(24.dp)) }
             }
-            Surface(color = Gold.Light) { Text("إجمالي قيمة المخزون: ${money(totalValue)}", Modifier.fillMaxWidth().padding(12.dp), fontWeight = FontWeight.Bold) }
+            Surface(color = Gold.Light) { Text("إجمالي قيمة المخزون: ${money(totalValue)}", Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), fontWeight = FontWeight.Bold) }
         }
     }
 }

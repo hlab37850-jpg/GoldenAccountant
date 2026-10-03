@@ -3,6 +3,7 @@ package com.golden.accountant
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +23,7 @@ import com.golden.accountant.ui.nav.Menu
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()   // إلزامي مع targetSdk 36؛ الشاشات تتعامل مع الحواف بنفسها
         super.onCreate(savedInstanceState)
         val db = (application as GoldenApp).db
         setContent {

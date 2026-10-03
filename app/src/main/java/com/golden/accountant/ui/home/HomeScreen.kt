@@ -79,7 +79,7 @@ fun HomeScreen(db: AppDatabase, onNavigate: (String) -> Unit, onOpenDrawer: () -
             // الأقسام القابلة للطي
             Menu.visibleSections().forEach { CollapsibleSection(it, onNavigate) }
             Menu.backup.filter { Session.can(it.route) }.forEach { MenuRow(it, onNavigate) }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp).navigationBarsPadding())
         }
     }
 }
