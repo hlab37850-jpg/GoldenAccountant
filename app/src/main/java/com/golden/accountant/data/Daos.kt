@@ -13,9 +13,9 @@ interface AccountDao {
     @Query("SELECT * FROM accounts ORDER BY id") fun observeAll(): Flow<List<Account>>
     @Query("SELECT * FROM accounts WHERE id=:id") suspend fun byId(id: Long): Account?
     @Query("SELECT * FROM accounts WHERE parentId=:parent ORDER BY id") suspend fun children(parent: Long): List<Account>
-    @Query("SELECT * FROM accounts WHERE isGroup=0 ORDER BY name") fun observeLeaves()
+    @Query("SELECT * FROM accounts WHERE isGroup=0 ORDER BY name") fun observeLeaves(): Flow<List<Account>>
     @Query("UPDATE accounts SET type=:type WHERE id=:id") suspend fun setType(id: Long, type: Int)
-    @Query("SELECT * FROM accounts WHERE isGroup=0 AND type IN (:types) ORDER BY name") fun observeByTypes(types: List<Int>): Flow<List<Account>>: Flow<List<Account>>
+    @Query("SELECT * FROM accounts WHERE isGroup=0 AND type IN (:types) ORDER BY name") fun observeByTypes(types: List<Int>): Flow<List<Account>>
     @Query("UPDATE accounts SET name=:name WHERE id=:id") suspend fun rename(id: Long, name: String)
     @Query("DELETE FROM accounts WHERE id=:id") suspend fun delete(id: Long)
     @Query("SELECT COUNT(*) FROM accounts WHERE parentId=:id") suspend fun childCount(id: Long): Int
