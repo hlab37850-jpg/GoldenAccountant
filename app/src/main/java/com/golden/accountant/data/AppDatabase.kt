@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         Account::class, Party::class, Currency::class, CurrencyRate::class, UnitDef::class, ItemType::class,
         Item::class, ItemUnit::class, Tax::class, Branch::class, AppUser::class, Screen::class, UserPriv::class,
-        ClosingYear::class, Bill::class, BillLine::class, JournalHeader::class, JournalLine::class, Voucher::class,
+        ClosingYear::class, Bill::class, BillLine::class, JournalHeader::class, JournalLine::class, Voucher::class, CusLimit::class, SysConf::class, ItemPrice::class,
     ],
     version = AppDatabase.VERSION,
     exportSchema = true,
@@ -26,9 +26,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun vouchers(): VoucherDao
     abstract fun users(): UserDao
     abstract fun screens(): ScreenDao
+    abstract fun limits(): CusLimitDao
+    abstract fun conf(): SysConfDao
+    abstract fun itemPrices(): ItemPriceDao
 
     companion object {
-        const val VERSION = 3
+        const val VERSION = 4
         const val FILE = "golden.db"
 
         /** v1 → v2 (الجزء 4): جدول السندات. */
@@ -51,6 +54,8 @@ abstract class AppDatabase : RoomDatabase() {
         fun get(ctx: Context): AppDatabase = inst ?: synchronized(this) {
             inst ?: Room.databaseBuilder(ctx.applicationContext, AppDatabase::class.java, FILE)
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                // v4 غيّر أرقام الحسابات النظامية لتطابق القاعدة الأصلية؛ لا ترحيل من الإصدارات 1-3 (كانت بيانات تجريبية فقط)
+                .fallbackToDestructiveMigrationFrom(1, 2, 3)
                 .build().also { inst = it }
         }
 

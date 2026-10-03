@@ -48,12 +48,12 @@ object ProfitLoss {
     fun compute(totals: Map<Long, Pair<Double, Double>>, accounts: List<Account>, openingInv: Double, closingInv: Double): Result {
         fun dr(id: Long) = totals[id]?.let { it.first - it.second } ?: 0.0   // صافي مدين
         fun cr(id: Long) = -dr(id)                                           // صافي دائن
-        val sales = cr(Sys.SALES); val sret = dr(Sys.SALES_RETURNS); val dAllowed = dr(Sys.DISCOUNT_ALLOWED)
+        val sales = cr(Sys.SALES_CREDIT) + cr(Sys.SALES_CASH); val sret = dr(Sys.SALES_RET_CREDIT) + dr(Sys.SALES_RET_CASH); val dAllowed = dr(Sys.DISCOUNT_ALLOWED)
         val netSales = Money.r(sales - sret - dAllowed)
-        val purchases = dr(Sys.PURCHASES); val pret = cr(Sys.PURCHASE_RETURNS); val dEarned = cr(Sys.DISCOUNT_EARNED)
+        val purchases = dr(Sys.PURCHASE_CREDIT) + dr(Sys.PURCHASE_CASH); val pret = cr(Sys.PURCHASE_RET_CREDIT) + cr(Sys.PURCHASE_RET_CASH); val dEarned = cr(Sys.DISCOUNT_EARNED)
         val netPurchases = Money.r(purchases - pret - dEarned)
         val cogs = Money.r(openingInv + netPurchases - closingInv)
-        val otherCosts = Money.r(dr(Sys.STOCK_ADJUST) + dr(Sys.DAMAGED_ITEMS))
+        val otherCosts = Money.r(dr(Sys.STOCK_SHORTAGE) + dr(Sys.STOCK_DAMAGED) + dr(Sys.STOCK_SETTLE))
         val gross = Money.r(netSales - cogs - otherCosts)
         val otherIncome = Money.r(leavesUnder(accounts, Sys.OTHER_REVENUE).sumOf { cr(it.id) })
         val expenses = leavesUnder(accounts, Sys.OPEX).map { Line(it.name, Money.r(dr(it.id))) }.filter { it.amount != 0.0 }

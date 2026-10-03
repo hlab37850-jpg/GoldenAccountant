@@ -94,6 +94,8 @@ private fun ItemEditDialog(
     var openQty by remember { mutableStateOf(num(item?.openingQty ?: 0.0)) }
     var openCost by remember { mutableStateOf(num(item?.openingCost ?: 0.0)) }
     var active by remember { mutableStateOf(item?.isActive ?: true) }
+    var openBranch by remember { mutableLongStateOf(item?.openingBranchId ?: 1L) }
+    val warehouses by db.core().observeBranches().collectAsState(emptyList())
     var seq by remember { mutableIntStateOf(0) }
     val extras = remember { mutableStateListOf<UnitRow>() }
     val real = remember(units) { units.filter { it.id != 0L } }
@@ -134,6 +136,7 @@ private fun ItemEditDialog(
                 }
                 OutlinedButton(onClick = { extras += UnitRow(seq++, real.firstOrNull { it.id != base }?.id ?: 0L, "", "") }) { Text("+ وحدة") }
 
+                if (warehouses.size > 1) { Text("مخزن الكمية الافتتاحية", style = MaterialTheme.typography.labelMedium); Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { warehouses.forEach { w -> FilterChip(openBranch == w.id, { openBranch = w.id }, { Text(w.name) }) } } }
                 Row(verticalAlignment = Alignment.CenterVertically) { Switch(active, { active = it }); Spacer(Modifier.width(8.dp)); Text("الصنف فعّال") }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -141,7 +144,7 @@ private fun ItemEditDialog(
                         val base0 = item ?: Item(name = "")
                         onSave(
                             base0.copy(name = name.trim(), barcode = barcode.trim().ifEmpty { null }, baseUnitId = base, salePrice = InvoiceMath.parse(salePrice),
-                                openingQty = InvoiceMath.parse(openQty), openingCost = InvoiceMath.parse(openCost), isActive = active,
+                                openingQty = InvoiceMath.parse(openQty), openingCost = InvoiceMath.parse(openCost), isActive = active, openingBranchId = openBranch,
                                 openingDate = base0.openingDate.ifEmpty { todayIso() }),
                             extras.filter { it.unitId != 0L }.map { ItemUnit(item?.id ?: 0L, it.unitId, InvoiceMath.parse(it.factor), InvoiceMath.parse(it.price)) },
                         )

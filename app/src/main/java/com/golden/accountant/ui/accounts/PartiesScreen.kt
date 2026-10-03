@@ -105,7 +105,6 @@ private fun PartyEditDialog(
     var name by remember { mutableStateOf(p?.name ?: "") }
     var phone by remember { mutableStateOf(p?.phone ?: "") }
     var address by remember { mutableStateOf(p?.address ?: "") }
-    var limit by remember { mutableStateOf(if ((p?.creditLimit ?: 0.0) > 0) p!!.creditLimit.toString() else "") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (p == null) "إضافة" else "تعديل") },
@@ -114,10 +113,9 @@ private fun PartyEditDialog(
                 OutlinedTextField(name, { name = it }, label = { Text("الاسم") }, singleLine = true)
                 OutlinedTextField(phone, { phone = it }, label = { Text("الهاتف") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
                 OutlinedTextField(address, { address = it }, label = { Text("العنوان") }, singleLine = true)
-                OutlinedTextField(limit, { limit = it }, label = { Text("سقف الدين (0 = بلا سقف)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(name, phone, address, InvoiceMath.parse(limit), Unit); onDismiss() }) { Text("حفظ") } },
+        confirmButton = { TextButton(onClick = { onSave(name, phone, address, 0.0, Unit); onDismiss() }) { Text("حفظ") } },
         dismissButton = {
             Row {
                 if (onDelete != null) TextButton(onClick = { onDelete(); onDismiss() }) { Text("حذف", color = MaterialTheme.colorScheme.error) }

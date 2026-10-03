@@ -38,7 +38,8 @@ private fun fmtNum(v: Double) = if (v == 0.0) "" else if (v % 1.0 == 0.0) v.toLo
 
 /** نموذج سند قبض/صرف. id=0 جديد؛ غير ذلك تعديل. */
 @Composable
-fun VoucherScreen(db: AppDatabase, type: Int, id: Long, onList: () -> Unit, onBack: () -> Unit) {
+fun VoucherScreen(db: AppDatabase, initialType: Int, id: Long, onList: (Int) -> Unit, onBack: () -> Unit) {
+    var type by remember { mutableIntStateOf(initialType) }
     val scope = rememberCoroutineScope()
     val snack = remember { SnackbarHostState() }
     val leaves by db.accounts().observeLeaves().collectAsState(emptyList())
@@ -58,7 +59,7 @@ fun VoucherScreen(db: AppDatabase, type: Int, id: Long, onList: () -> Unit, onBa
     var confirmDelete by remember { mutableStateOf(false) }
     var currentBalance by remember { mutableDoubleStateOf(0.0) }
 
-    LaunchedEffect(id) {
+    LaunchedEffect(id, type) {
         cash = db.accounts().byId(Session.cashAccountId)
         if (id > 0) {
             val v = db.vouchers().byId(id) ?: run { onBack(); return@LaunchedEffect }
@@ -68,22 +69,26 @@ fun VoucherScreen(db: AppDatabase, type: Int, id: Long, onList: () -> Unit, onBa
     }
     LaunchedEffect(account, currency) { account?.let { currentBalance = db.accounts().balance(it.id, currency) } }
 
-    val cashAccounts = remember(leaves) { leaves.filter { it.parentId == Sys.CASH_BOXES || it.parentId == Sys.BANKS } }
+    val cashAccounts = remember(leaves) { leaves.filter { it.type == com.golden.accountant.domain.AccType.CASH } }
     val amt = InvoiceMath.parse(amount); val disc = InvoiceMath.parse(discount)
-    val route = if (type == TrType.RECEIPT) Routes.RECEIPT else Routes.PAYMENT
+    val route = Routes.VOUCHER
     val canSave = Session.can(route, if (id > 0) Action.EDIT else Action.NEW)
     val canDelete = Session.can(route, Action.DELETE)
 
     Scaffold(
         topBar = {
             GoldTopBar(title(type) + if (no > 0) "  #$no" else "", onBack) {
-                IconButton(onClick = onList) { Icon(Icons.Default.List, "قائمة السندات") }
+                IconButton(onClick = { onList(type) }) { Icon(Icons.Default.List, "قائمة السندات") }
                 if (id > 0 && canDelete) IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Default.Delete, "حذف") }
             }
         },
         snackbarHost = { SnackbarHost(snack) },
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (id == 0L) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(type == TrType.RECEIPT, { type = TrType.RECEIPT; no = 0 }, { Text("سند قبض") })
+                FilterChip(type == TrType.PAYMENT, { type = TrType.PAYMENT; no = 0 }, { Text("سند صرف") })
+            }
             DateButton(date) { date = it }
             CurrencyChips(currencies, currency) { currency = it }
             OutlinedButton(onClick = { pickAccount = true }, Modifier.fillMaxWidth()) {

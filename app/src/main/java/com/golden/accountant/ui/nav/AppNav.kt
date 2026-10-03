@@ -17,64 +17,64 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.golden.accountant.data.AppDatabase
-import com.golden.accountant.ui.Gold
-import com.golden.accountant.ui.common.CollapsibleSection
-import com.golden.accountant.ui.common.MenuRow
-import com.golden.accountant.ui.common.PlaceholderScreen
 import com.golden.accountant.data.Party
+import com.golden.accountant.domain.Session
 import com.golden.accountant.domain.TrType
+import com.golden.accountant.ui.Gold
+import com.golden.accountant.ui.accounts.AccountsListScreen
 import com.golden.accountant.ui.accounts.AccountsTreeScreen
 import com.golden.accountant.ui.accounts.PartiesScreen
 import com.golden.accountant.ui.accounts.StatementScreen
-import com.golden.accountant.ui.items.ItemsScreen
-import com.golden.accountant.ui.items.StocktakeScreen
-import com.golden.accountant.ui.items.UnitsScreen
-import com.golden.accountant.ui.report.ProfitLossScreen
-import com.golden.accountant.ui.report.SalesReportScreen
-import com.golden.accountant.ui.report.StockReportScreen
-import com.golden.accountant.ui.report.TrialBalanceScreen
-import com.golden.accountant.ui.items.TransferScreen
-import com.golden.accountant.ui.settings.BackupScreen
-import com.golden.accountant.ui.settings.BranchesScreen
-import com.golden.accountant.ui.settings.ClosingScreen
-import com.golden.accountant.ui.settings.CurrenciesScreen
-import com.golden.accountant.ui.settings.TaxesScreen
-import com.golden.accountant.ui.settings.UsersScreen
-import com.golden.accountant.domain.Session
+import com.golden.accountant.ui.common.CollapsibleSection
+import com.golden.accountant.ui.common.MenuRow
+import com.golden.accountant.ui.common.PlaceholderScreen
 import com.golden.accountant.ui.home.HomeScreen
-import com.golden.accountant.ui.journal.JournalEntryScreen
-import com.golden.accountant.ui.journal.JournalListScreen
-import com.golden.accountant.ui.voucher.VoucherScreen
-import com.golden.accountant.ui.voucher.VouchersListScreen
 import com.golden.accountant.ui.invoice.BillListScreen
+import com.golden.accountant.ui.invoice.InvoiceKind
 import com.golden.accountant.ui.invoice.InvoiceKinds
 import com.golden.accountant.ui.invoice.InvoiceScreen
-import com.golden.accountant.ui.settings.SettingsScreen
+import com.golden.accountant.ui.items.*
+import com.golden.accountant.ui.journal.JournalEntryScreen
+import com.golden.accountant.ui.journal.JournalListScreen
+import com.golden.accountant.ui.report.*
+import com.golden.accountant.ui.settings.*
+import com.golden.accountant.ui.voucher.VoucherScreen
+import com.golden.accountant.ui.voucher.VouchersListScreen
 import kotlinx.coroutines.launch
 
 private const val EDIT_ROUTE = "bill/{k}/{id}"
+private const val NEW_ROUTE = "new/{k}"
 private const val JOURNAL_NEW = "journal_new"
+private const val OPENING_NEW = "opening_new"
 
-/**
- * التنقل الرئيسي. `real` يربط مساراً بشاشته الحقيقية؛ أي مسار غير موجود فيه
- * يظهر كشاشة مؤقتة. الأجزاء 4–6 تضيف شاشاتها هنا.
- */
+/** قوائم المستندات: مسار القائمة → أنواع المستندات التي تعرضها. */
+private val billLists: Map<String, List<InvoiceKind>> = mapOf(
+    Routes.SALES to listOf(InvoiceKinds.SALES, InvoiceKinds.SALES_BACK),
+    Routes.PURCHASE to listOf(InvoiceKinds.PURCHASE, InvoiceKinds.PURCHASE_BACK),
+    Routes.QUOTE to listOf(InvoiceKinds.QUOTE),
+    Routes.PURCHASE_ORDER to listOf(InvoiceKinds.PURCHASE_ORDER),
+    Routes.SUPPLY to listOf(InvoiceKinds.SUPPLY),
+    Routes.ISSUE to listOf(InvoiceKinds.ISSUE),
+)
+
 @Composable
 fun AppNav(db: AppDatabase, real: Map<String, @Composable (onBack: () -> Unit) -> Unit> = emptyMap()) {
     val nav = rememberNavController()
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val route = nav.currentBackStackEntryAsState().value?.destination?.route
-
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    // المسارات المتفرعة (bill/.., voucher/..) تُحكم بصلاحية أصلها؛ هنا نمنع فتح أي شاشة بلا صلاحية عرض
+
+    // المسارات المتفرعة تُحكم بصلاحية أصلها؛ ولا تُفتح شاشة بلا صلاحية عرض
     val go: (String) -> Unit = { target ->
         scope.launch { drawer.close() }
-        val base = when {
-            target.startsWith("bill/") -> target.split("/").getOrNull(1) ?: target
-            target.startsWith("voucher/") || target.startsWith("vouchers/") -> if (target.split("/").getOrNull(1) == "5") Routes.RECEIPT else Routes.PAYMENT
-            target.startsWith("statement/") -> Routes.STATEMENT
-            target == "journal_new" -> Routes.JOURNAL
+        val parts = target.split("/")
+        val base = when (parts[0]) {
+            "bill", "new" -> InvoiceKinds.byRoute(parts.getOrNull(1))?.permRoute ?: target
+            "voucher", "vouchers" -> Routes.VOUCHER
+            "statement" -> Routes.STATEMENT
+            JOURNAL_NEW -> Routes.JOURNAL
+            OPENING_NEW -> Routes.OPENING_ENTRY
             else -> target
         }
         if (target == Routes.HOME || target == Routes.SETTINGS || Session.can(base)) { if (target != Routes.HOME) nav.navigate(target) { launchSingleTop = true } }
@@ -89,8 +89,11 @@ fun AppNav(db: AppDatabase, real: Map<String, @Composable (onBack: () -> Unit) -
             ModalDrawerSheet {
                 Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
                     Text("المحاسب الذهبي", style = MaterialTheme.typography.titleLarge, color = Gold.Primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(8.dp))
+                    Menu.tiles.filter { Session.can(it.route) }.forEach { MenuRow(it, go) }
+                    HorizontalDivider(Modifier.padding(vertical = 6.dp))
                     Menu.visibleSections().forEach { CollapsibleSection(it, go) }
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                    Menu.backup.filter { Session.can(it.route) }.forEach { MenuRow(it, go) }
                     MenuRow(MenuItemSettings, go)
                 }
             }
@@ -100,62 +103,65 @@ fun AppNav(db: AppDatabase, real: Map<String, @Composable (onBack: () -> Unit) -
             composable(Routes.HOME) { HomeScreen(db, go) { scope.launch { drawer.open() } } }
             composable(Routes.SETTINGS) { SettingsScreen(db, go, back) }
 
-            // تعديل فاتورة موجودة: bill/{kindRoute}/{id}
+            // فاتورة جديدة / فتح فاتورة موجودة
+            composable(NEW_ROUTE, arguments = listOf(navArgument("k") { type = NavType.StringType })) { e ->
+                val kind = InvoiceKinds.byRoute(e.arguments?.getString("k"))
+                if (kind != null) InvoiceScreen(db, kind, 0L, back) else PlaceholderScreen("فاتورة", 3, back)
+            }
             composable(EDIT_ROUTE, arguments = listOf(navArgument("k") { type = NavType.StringType }, navArgument("id") { type = NavType.LongType })) { e ->
                 val kind = InvoiceKinds.byRoute(e.arguments?.getString("k"))
                 val id = e.arguments?.getLong("id") ?: 0L
                 if (kind != null) InvoiceScreen(db, kind, id, back) else PlaceholderScreen("فاتورة", 3, back)
             }
-
-            // كشف حساب لحساب محدد، وسندات (نموذج/قائمة/تعديل)، وقيد جديد
-            composable("statement/{a}", arguments = listOf(navArgument("a") { type = NavType.LongType })) { e ->
-                StatementScreen(db, e.arguments?.getLong("a") ?: 0L, back)
-            }
+            // كشف حساب لحساب محدد، وسندات (نموذج/قائمة/تعديل)، وقيود جديدة
+            composable("statement/{a}", arguments = listOf(navArgument("a") { type = NavType.LongType })) { e -> StatementScreen(db, e.arguments?.getLong("a") ?: 0L, back) }
             composable("voucher/{t}/{id}", arguments = listOf(navArgument("t") { type = NavType.IntType }, navArgument("id") { type = NavType.LongType })) { e ->
                 val t = e.arguments?.getInt("t") ?: TrType.RECEIPT
                 VoucherScreen(db, t, e.arguments?.getLong("id") ?: 0L, onList = { go("vouchers/$t") }, onBack = back)
             }
             composable("vouchers/{t}", arguments = listOf(navArgument("t") { type = NavType.IntType })) { e ->
                 val t = e.arguments?.getInt("t") ?: TrType.RECEIPT
-                VouchersListScreen(db, t, onNew = { go(if (t == TrType.RECEIPT) Routes.RECEIPT else Routes.PAYMENT) }, onOpen = { go("voucher/$t/$it") }, onBack = back)
+                VouchersListScreen(db, t, onNew = { go("voucher/$t/0") }, onOpen = { go("voucher/$t/$it") }, onBack = back)
             }
-            composable(JOURNAL_NEW) { JournalEntryScreen(db, back) }
+            composable(JOURNAL_NEW) { JournalEntryScreen(db, opening = false, onBack = back) }
+            composable(OPENING_NEW) { JournalEntryScreen(db, opening = true, onBack = back) }
 
             Menu.allItems.forEach { item ->
                 composable(item.route) {
-                    val invoice = InvoiceKinds.byRoute(item.route)
                     val screen = real[item.route]
+                    val family = billLists[item.route]
                     when {
-                        invoice != null -> InvoiceScreen(db, invoice, 0L, back)
-                        item.route == Routes.SALES_LIST -> BillListScreen(
-                            db, InvoiceKinds.salesFamily, item.title,
-                            onNew = { go(it.route) }, onOpen = { k, id -> go("bill/${k.route}/$id") }, onBack = back,
-                        )
-                        item.route == Routes.PURCHASE_LIST -> BillListScreen(
-                            db, InvoiceKinds.purchaseFamily, item.title,
-                            onNew = { go(it.route) }, onOpen = { k, id -> go("bill/${k.route}/$id") }, onBack = back,
-                        )
-                        item.route == Routes.RECEIPT -> VoucherScreen(db, TrType.RECEIPT, 0L, onList = { go("vouchers/${TrType.RECEIPT}") }, onBack = back)
-                        item.route == Routes.PAYMENT -> VoucherScreen(db, TrType.PAYMENT, 0L, onList = { go("vouchers/${TrType.PAYMENT}") }, onBack = back)
-                        item.route == Routes.JOURNAL -> JournalListScreen(db, onNew = { go(JOURNAL_NEW) }, onBack = back)
+                        family != null -> BillListScreen(db, family, item.title, onNew = { go("new/${it.route}") }, onOpen = { k, id -> go("bill/${k.route}/$id") }, onBack = back)
+                        item.route == Routes.VOUCHER -> VoucherScreen(db, TrType.RECEIPT, 0L, onList = { t -> go("vouchers/$t") }, onBack = back)
+                        item.route == Routes.ACCOUNTS_LIST || item.route == Routes.ADD_ACCOUNT -> AccountsListScreen(db, openAdd = item.route == Routes.ADD_ACCOUNT, onStatement = { go("statement/$it") }, onBack = back)
+                        item.route == Routes.JOURNAL -> JournalListScreen(db, opening = false, onNew = { go(JOURNAL_NEW) }, onBack = back)
+                        item.route == Routes.OPENING_ENTRY -> JournalListScreen(db, opening = true, onNew = { go(OPENING_NEW) }, onBack = back)
+                        item.route == Routes.CASH_MOVEMENT -> StatementScreen(db, Session.cashAccountId, back)
                         item.route == Routes.ACCOUNTS -> AccountsTreeScreen(db, onStatement = { go("statement/$it") }, onBack = back)
                         item.route == Routes.CUSTOMERS -> PartiesScreen(db, Party.KIND_CUSTOMER, item.title, onStatement = { go("statement/$it") }, onBack = back)
                         item.route == Routes.SUPPLIERS -> PartiesScreen(db, Party.KIND_SUPPLIER, item.title, onStatement = { go("statement/$it") }, onBack = back)
                         item.route == Routes.STATEMENT -> StatementScreen(db, 0L, back)
                         item.route == Routes.ITEMS -> ItemsScreen(db, back)
+                        item.route == Routes.ITEM_PRICES -> ItemPricesScreen(db, back)
                         item.route == Routes.UNITS -> UnitsScreen(db, back)
                         item.route == Routes.STOCKTAKE -> StocktakeScreen(db, back)
+                        item.route == Routes.ADJUST -> AdjustScreen(db, back)
+                        item.route == Routes.TRANSFER -> TransferScreen(db, back)
+                        item.route == Routes.WAREHOUSES -> BranchesScreen(db, back)
+                        item.route == Routes.CURRENCIES -> CurrenciesScreen(db, back)
+                        item.route == Routes.RATES -> RatesScreen(db, back)
+                        item.route == Routes.ACCOUNT_LIMIT -> AccountLimitScreen(db, back)
+                        item.route == Routes.ITEM_MOVEMENT -> ItemMovementScreen(db, back)
                         item.route == Routes.TRIAL -> TrialBalanceScreen(db, back)
-                        item.route == Routes.PROFIT -> ProfitLossScreen(db, back)
+                        item.route == Routes.INCOME -> ProfitLossScreen(db, back)
+                        item.route == Routes.BALANCE_SHEET -> BalanceSheetScreen(db, back)
+                        item.route == Routes.OTHER_REPORTS -> OtherReportsScreen(go, back)
                         item.route == Routes.SALES_REPORT -> SalesReportScreen(db, back)
                         item.route == Routes.STOCK_REPORT -> StockReportScreen(db, back)
-                        item.route == Routes.USERS -> UsersScreen(db, back)
-                        item.route == Routes.CURRENCIES -> CurrenciesScreen(db, back)
-                        item.route == Routes.TAXES -> TaxesScreen(db, back)
-                        item.route == Routes.BRANCHES -> BranchesScreen(db, back)
-                        item.route == Routes.BACKUP -> BackupScreen(db, back)
+                        item.route == Routes.BACKUP_SAVE || item.route == Routes.BACKUP_RESTORE -> BackupScreen(db, back)
                         item.route == Routes.CLOSING -> ClosingScreen(db, back)
-                        item.route == Routes.TRANSFER -> TransferScreen(db, back)
+                        item.route == Routes.USERS -> UsersScreen(db, back)
+                        item.route == Routes.TAXES -> TaxesScreen(db, back)
                         screen != null -> screen(back)
                         else -> PlaceholderScreen(item.title, item.part, back)
                     }
@@ -165,4 +171,4 @@ fun AppNav(db: AppDatabase, real: Map<String, @Composable (onBack: () -> Unit) -
     }
 }
 
-private val MenuItemSettings = MenuItem(Routes.SETTINGS, "الإعدادات", Icons.Default.Settings, 2)
+private val MenuItemSettings = MenuItem(Routes.SETTINGS, "الإعدادات", Icons.Default.Settings)

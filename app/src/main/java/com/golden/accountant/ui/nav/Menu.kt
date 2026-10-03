@@ -8,69 +8,102 @@ import com.golden.accountant.domain.Session
 object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
-    const val SALES = "sales_invoice"; const val SALES_BACK = "sales_return"; const val QUOTE = "quote"; const val SALES_LIST = "sales_list"
-    const val PURCHASE = "purchase_invoice"; const val PURCHASE_BACK = "purchase_return"; const val PURCHASE_ORDER = "purchase_order"; const val PURCHASE_LIST = "purchase_list"
-    const val RECEIPT = "receipt_voucher"; const val PAYMENT = "payment_voucher"; const val JOURNAL = "journal_entry"
-    const val ACCOUNTS = "accounts_tree"; const val CUSTOMERS = "customers"; const val SUPPLIERS = "suppliers"; const val STATEMENT = "account_statement"
-    const val ITEMS = "items"; const val UNITS = "units"; const val STOCKTAKE = "stocktake"; const val TRANSFER = "stock_transfer"
-    const val TRIAL = "trial_balance"; const val PROFIT = "profit_loss"; const val SALES_REPORT = "sales_report"; const val STOCK_REPORT = "stock_report"
-    const val USERS = "users"; const val CURRENCIES = "currencies"; const val TAXES = "taxes"; const val BRANCHES = "branches"
-    const val BACKUP = "backup"; const val CLOSING = "closing_year"
+    // البلاطات الأربع
+    const val SALES = "sales"; const val PURCHASE = "purchase"; const val VOUCHER = "voucher_home"; const val ACCOUNTS_LIST = "accounts_list"
+    // عمليات مخزنية
+    const val SUPPLY = "stock_supply"; const val ISSUE = "stock_issue"; const val TRANSFER = "stock_transfer"; const val ADJUST = "stock_adjust"
+    const val WAREHOUSES = "warehouses"; const val STOCKTAKE = "stocktake"
+    // قيود وحسابات
+    const val JOURNAL = "journal_entry"; const val OPENING_ENTRY = "opening_entry"; const val ADD_ACCOUNT = "add_account"
+    const val CASH_MOVEMENT = "cash_movement"; const val ACCOUNTS = "accounts_tree"; const val CLOSING = "closing_year"
+    // أصناف
+    const val ITEMS = "items"; const val ITEM_PRICES = "item_prices"; const val UNITS = "units"; const val QUOTE = "quote"; const val PURCHASE_ORDER = "purchase_order"
+    // عملات
+    const val CURRENCIES = "currencies"; const val RATES = "currency_rates"; const val ACCOUNT_LIMIT = "account_limit"
+    // تقارير
+    const val ITEM_MOVEMENT = "item_movement"; const val TRIAL = "trial_balance"; const val INCOME = "income_statement"; const val BALANCE_SHEET = "balance_sheet"; const val OTHER_REPORTS = "other_reports"
+    const val SALES_REPORT = "sales_report"; const val STOCK_REPORT = "stock_report"; const val STATEMENT = "account_statement"
+    const val CUSTOMERS = "customers"; const val SUPPLIERS = "suppliers"
+    // نسخ احتياطي + إعدادات
+    const val BACKUP_SAVE = "backup_save"; const val BACKUP_RESTORE = "backup_restore"
+    const val USERS = "users"; const val TAXES = "taxes"
 }
 
-/** part = رقم الجزء من خطة التسليم الذي يبني هذه الشاشة فعلياً. */
-data class MenuItem(val route: String, val title: String, val icon: ImageVector, val part: Int)
+/** part: للتتبع فقط. */
+data class MenuItem(val route: String, val title: String, val icon: ImageVector, val part: Int = 0)
 data class MenuSection(val title: String, val icon: ImageVector, val items: List<MenuItem>)
 
+/**
+ * بنية القوائم مطابقة لجدول screens في القاعدة الأصلية:
+ * أربع بلاطات رئيسية، خمس مجموعات، وعنصرا النسخ الاحتياطي (حفظ/استرجاع).
+ */
 object Menu {
+    val tiles = listOf(
+        MenuItem(Routes.SALES, "المبيعات", Icons.Default.ShoppingCart),
+        MenuItem(Routes.PURCHASE, "المشتريات", Icons.Default.Star),
+        MenuItem(Routes.VOUCHER, "قبض/صرف", Icons.Default.Email),
+        MenuItem(Routes.ACCOUNTS_LIST, "الحسابات", Icons.Default.AccountBox),
+    )
+
     val sections: List<MenuSection> = listOf(
-        MenuSection("المبيعات", Icons.Default.ShoppingCart, listOf(
-            MenuItem(Routes.SALES, "فاتورة مبيعات", Icons.Default.Add, 3),
-            MenuItem(Routes.SALES_BACK, "مرتجع مبيعات", Icons.Default.Refresh, 3),
-            MenuItem(Routes.QUOTE, "عرض سعر", Icons.Default.Info, 3),
-            MenuItem(Routes.SALES_LIST, "قائمة فواتير المبيعات", Icons.Default.List, 3),
+        MenuSection("عمليات مخزنية", Icons.Default.Home, listOf(
+            MenuItem(Routes.SUPPLY, "توريد مخزني", Icons.Default.Add),
+            MenuItem(Routes.ISSUE, "صرف مخزني", Icons.Default.Refresh),
+            MenuItem(Routes.TRANSFER, "تحويل مخزني", Icons.Default.Share),
+            MenuItem(Routes.ADJUST, "تسوية مخزنية", Icons.Default.Build),
+            MenuItem(Routes.WAREHOUSES, "إضافة مخزن", Icons.Default.Add),
+            MenuItem(Routes.STOCKTAKE, "جرد مخزني", Icons.Default.Check),
         )),
-        MenuSection("المشتريات", Icons.Default.Star, listOf(
-            MenuItem(Routes.PURCHASE, "فاتورة مشتريات", Icons.Default.Add, 3),
-            MenuItem(Routes.PURCHASE_BACK, "مرتجع مشتريات", Icons.Default.Refresh, 3),
-            MenuItem(Routes.PURCHASE_ORDER, "طلب شراء", Icons.Default.Info, 3),
-            MenuItem(Routes.PURCHASE_LIST, "قائمة فواتير المشتريات", Icons.Default.List, 3),
+        MenuSection("قيود وحسابات", Icons.Default.Edit, listOf(
+            MenuItem(Routes.JOURNAL, "قيد يومي", Icons.Default.Edit),
+            MenuItem(Routes.OPENING_ENTRY, "قيد إفتتاحي", Icons.Default.Edit),
+            MenuItem(Routes.ADD_ACCOUNT, "إضافة حساب", Icons.Default.Add),
+            MenuItem(Routes.CASH_MOVEMENT, "حركة الصندوق", Icons.Default.DateRange),
+            MenuItem(Routes.ACCOUNTS, "دليل الحسابات", Icons.Default.List),
+            MenuItem(Routes.CLOSING, "إقفال سنوي", Icons.Default.Lock),
         )),
-        MenuSection("السندات والقيود", Icons.Default.Email, listOf(
-            MenuItem(Routes.RECEIPT, "سند قبض", Icons.Default.Add, 4),
-            MenuItem(Routes.PAYMENT, "سند صرف", Icons.Default.Add, 4),
-            MenuItem(Routes.JOURNAL, "قيد يومية", Icons.Default.Edit, 4),
+        MenuSection("أصناف", Icons.Default.List, listOf(
+            MenuItem(Routes.ITEMS, "الأصناف", Icons.Default.List),
+            MenuItem(Routes.ITEM_PRICES, "أسعار البيع", Icons.Default.Star),
+            MenuItem(Routes.UNITS, "وحدات الصنف", Icons.Default.Build),
+            MenuItem(Routes.QUOTE, "فاتورة عرض سعر", Icons.Default.Info),
+            MenuItem(Routes.PURCHASE_ORDER, "طلب شراء", Icons.Default.Info),
         )),
-        MenuSection("الحسابات", Icons.Default.AccountBox, listOf(
-            MenuItem(Routes.ACCOUNTS, "شجرة الحسابات", Icons.Default.List, 4),
-            MenuItem(Routes.CUSTOMERS, "العملاء", Icons.Default.Person, 4),
-            MenuItem(Routes.SUPPLIERS, "الموردون", Icons.Default.Person, 4),
-            MenuItem(Routes.STATEMENT, "كشف حساب", Icons.Default.DateRange, 4),
-        )),
-        MenuSection("المخزون", Icons.Default.Home, listOf(
-            MenuItem(Routes.ITEMS, "الأصناف", Icons.Default.List, 5),
-            MenuItem(Routes.UNITS, "الوحدات", Icons.Default.Build, 5),
-            MenuItem(Routes.STOCKTAKE, "الجرد والتسوية", Icons.Default.Check, 5),
-            MenuItem(Routes.TRANSFER, "تحويل مخزني", Icons.Default.Share, 6),
+        MenuSection("العملات", Icons.Default.Refresh, listOf(
+            MenuItem(Routes.CURRENCIES, "إضافة عملة", Icons.Default.Add),
+            MenuItem(Routes.RATES, "سعر العملات", Icons.Default.Refresh),
+            MenuItem(Routes.ACCOUNT_LIMIT, "سقف الحساب", Icons.Default.Warning),
         )),
         MenuSection("التقارير", Icons.Default.Info, listOf(
-            MenuItem(Routes.TRIAL, "ميزان المراجعة", Icons.Default.List, 5),
-            MenuItem(Routes.PROFIT, "الأرباح والخسائر", Icons.Default.Star, 5),
-            MenuItem(Routes.SALES_REPORT, "تقرير المبيعات", Icons.Default.DateRange, 5),
-            MenuItem(Routes.STOCK_REPORT, "تقرير المخزون", Icons.Default.Home, 5),
+            MenuItem(Routes.ITEM_MOVEMENT, "حركة الأصناف", Icons.Default.List),
+            MenuItem(Routes.TRIAL, "ميزان المراجعة", Icons.Default.List),
+            MenuItem(Routes.INCOME, "قائمة الدخل", Icons.Default.Star),
+            MenuItem(Routes.BALANCE_SHEET, "المركز المالي", Icons.Default.AccountBox),
+            MenuItem(Routes.OTHER_REPORTS, "تقارير أخرى", Icons.Default.Info),
         )),
+    )
+
+    /** عنصرا النسخ الاحتياطي في القائمة الرئيسية (حفظ/استرجاع). */
+    val backup = listOf(
+        MenuItem(Routes.BACKUP_SAVE, "حفظ نسخة احتياطية", Icons.Default.Share),
+        MenuItem(Routes.BACKUP_RESTORE, "استرجاع نسخة احتياطية", Icons.Default.Refresh),
+    )
+
+    /** محتويات «تقارير أخرى». */
+    val otherReports = listOf(
+        MenuItem(Routes.SALES_REPORT, "تقرير المبيعات والمشتريات", Icons.Default.DateRange),
+        MenuItem(Routes.STOCK_REPORT, "تقرير المخزون", Icons.Default.Home),
+        MenuItem(Routes.STATEMENT, "كشف حساب", Icons.Default.List),
+        MenuItem(Routes.CUSTOMERS, "العملاء", Icons.Default.Person),
+        MenuItem(Routes.SUPPLIERS, "الموردون", Icons.Default.Person),
     )
 
     val settings: List<MenuItem> = listOf(
-        MenuItem(Routes.USERS, "المستخدمون والصلاحيات", Icons.Default.Lock, 6),
-        MenuItem(Routes.CURRENCIES, "العملات وأسعار الصرف", Icons.Default.Refresh, 6),
-        MenuItem(Routes.TAXES, "الضرائب", Icons.Default.Info, 6),
-        MenuItem(Routes.BRANCHES, "الفروع", Icons.Default.Home, 6),
-        MenuItem(Routes.BACKUP, "النسخ الاحتياطي والاستعادة", Icons.Default.Share, 6),
-        MenuItem(Routes.CLOSING, "إقفال السنة المالية", Icons.Default.Lock, 6),
+        MenuItem(Routes.USERS, "المستخدمون والصلاحيات", Icons.Default.Lock),
+        MenuItem(Routes.TAXES, "الضرائب", Icons.Default.Info),
     )
 
-    val allItems: List<MenuItem> get() = sections.flatMap { it.items } + settings
+    val allItems: List<MenuItem> get() = tiles + sections.flatMap { it.items } + backup + otherReports + settings
 
     /** الأقسام التي يحق للمستخدم الحالي رؤية شيء منها. */
     fun visibleSections(): List<MenuSection> = sections

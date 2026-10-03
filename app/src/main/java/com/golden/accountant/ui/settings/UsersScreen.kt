@@ -81,12 +81,12 @@ private fun UserDialog(
     var name by remember { mutableStateOf(u?.name ?: "") }
     var userName by remember { mutableStateOf(u?.userName ?: "") }
     var pw by remember { mutableStateOf("") }
-    var cash by remember { mutableLongStateOf(u?.cashAccountId ?: Sys.MAIN_CASH) }
+    var cash by remember { mutableLongStateOf(u?.cashAccountId ?: Sys.CASH) }
     var branch by remember { mutableLongStateOf(u?.branchId ?: 1L) }
     var admin by remember { mutableStateOf(u?.isAdmin ?: false) }
     var active by remember { mutableStateOf(u?.isActive ?: true) }
     var pick by remember { mutableStateOf(false) }
-    val cashAccounts = remember(leaves) { leaves.filter { it.parentId == Sys.CASH_BOXES || it.parentId == Sys.BANKS } }
+    val cashAccounts = remember(leaves) { leaves.filter { it.type == com.golden.accountant.domain.AccType.CASH } }
 
     AlertDialog(
         onDismissRequest = onDismiss,

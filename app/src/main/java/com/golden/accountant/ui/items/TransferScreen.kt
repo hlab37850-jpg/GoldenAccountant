@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 private data class TLine(val item: Item, val qty: String = "")
 
-/** تحويل مخزني بين فرعين (بالوحدة الأساسية). يُمنع إن كان رصيد الفرع المرسل لا يكفي. */
+/** تحويل مخزني بين مخزنين (بالوحدة الأساسية). يُمنع إن كان رصيد المخزن المرسل لا يكفي. */
 @Composable
 fun TransferScreen(db: AppDatabase, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
@@ -44,10 +44,10 @@ fun TransferScreen(db: AppDatabase, onBack: () -> Unit) {
     val canNew = Session.can(Routes.TRANSFER, Action.NEW); val canDelete = Session.can(Routes.TRANSFER, Action.DELETE)
     val names = remember(branches) { branches.associate { it.id to it.name } }
 
-    // رصيد الفرع المرسل (الافتتاحي للفرع 1) — يُحدَّث عند تغيير الفرع وبعد كل تحويل
+    // رصيد المخزن المرسل (الافتتاحي للمخزن 1) — يُحدَّث عند تغيير المخزن وبعد كل تحويل
     LaunchedEffect(from, history.size) {
         val m = db.items().stockByBranch(from).associate { it.itemId to it.qty }
-        available = allItems.associate { it.id to Money.r((if (from == 1L) it.openingQty else 0.0) + (m[it.id] ?: 0.0)) }
+        available = allItems.associate { it.id to Money.r((if (it.openingBranchId == from) it.openingQty else 0.0) + (m[it.id] ?: 0.0)) }
     }
 
     Scaffold(
@@ -60,7 +60,7 @@ fun TransferScreen(db: AppDatabase, onBack: () -> Unit) {
                     Button(enabled = canNew && lines.isNotEmpty() && to != 0L, onClick = {
                         scope.launch {
                             runCatching {
-                                if (from == to) throw PostingException("اختر فرعين مختلفين")
+                                if (from == to) throw PostingException("اختر مخزنين مختلفين")
                                 val l = lines.map { BillLine(itemId = it.item.id, unitId = it.item.baseUnitId, unitFactor = 1.0, qty = InvoiceMath.parse(it.qty), price = 0.0) }
                                 l.forEachIndexed { i, x ->
                                     if (x.qty <= 0) throw PostingException("الكمية يجب أن تكون أكبر من صفر: ${lines[i].item.name}")
@@ -78,11 +78,11 @@ fun TransferScreen(db: AppDatabase, onBack: () -> Unit) {
         LazyColumn(Modifier.fillMaxSize().padding(pad).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 Spacer(Modifier.height(4.dp))
-                Text("من فرع", style = MaterialTheme.typography.labelMedium)
+                Text("من مخزن", style = MaterialTheme.typography.labelMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { branches.forEach { b -> FilterChip(from == b.id, { from = b.id; lines.clear() }, { Text(b.name) }) } }
-                Text("إلى فرع", style = MaterialTheme.typography.labelMedium)
+                Text("إلى مخزن", style = MaterialTheme.typography.labelMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { branches.filter { it.id != from }.forEach { b -> FilterChip(to == b.id, { to = b.id }, { Text(b.name) }) } }
-                if (branches.size < 2) Text("أضف فرعاً ثانياً من شاشة الفروع أولاً.", color = MaterialTheme.colorScheme.error)
+                if (branches.size < 2) Text("أضف مخزناً ثانياً من شاشة المخازن أولاً.", color = MaterialTheme.colorScheme.error)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     DateButton(date) { date = it }
                     OutlinedButton(onClick = { picking = true }) { Text("+ صنف") }
@@ -114,7 +114,7 @@ fun TransferScreen(db: AppDatabase, onBack: () -> Unit) {
     if (picking) SimpleItemPicker(allItems.filter { it.isActive }, onPick = { i -> if (lines.none { it.item.id == i.id }) lines += TLine(i) }, onDismiss = { picking = false })
     deleting?.let { b ->
         AlertDialog(
-            onDismissRequest = { deleting = null }, title = { Text("حذف التحويل #${b.billNo}؟") }, text = { Text("سترجع الكميات إلى الفرع المرسل.") },
+            onDismissRequest = { deleting = null }, title = { Text("حذف التحويل #${b.billNo}؟") }, text = { Text("سترجع الكميات إلى المخزن المرسل.") },
             confirmButton = { TextButton(onClick = { deleting = null; scope.launch { runCatching { BillRepository(db).delete(b.id) }.onFailure { snack.showSnackbar(it.message ?: "تعذر الحذف") } } }) { Text("حذف", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text("إلغاء") } },
         )

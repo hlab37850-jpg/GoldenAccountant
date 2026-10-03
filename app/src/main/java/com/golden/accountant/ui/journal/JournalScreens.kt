@@ -31,19 +31,21 @@ import com.golden.accountant.ui.common.*
 import kotlinx.coroutines.launch
 
 @Composable
-fun JournalListScreen(db: AppDatabase, onNew: () -> Unit, onBack: () -> Unit) {
+fun JournalListScreen(db: AppDatabase, opening: Boolean, onNew: () -> Unit, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snack = remember { SnackbarHostState() }
-    val entries by db.journal().observeManual().collectAsState(emptyList())
+    val allEntries by db.journal().observeManual().collectAsState(emptyList())
+    val entries = remember(allEntries, opening) { allEntries.filter { (it.kind == com.golden.accountant.domain.TrType.OPENING) == opening } }
     val accounts by db.accounts().observeAll().collectAsState(emptyList())
     val names = remember(accounts) { accounts.associate { it.id to it.name } }
     var open by remember { mutableStateOf<JournalSummary?>(null) }
-    val canNew = Session.can(Routes.JOURNAL, Action.NEW); val canDelete = Session.can(Routes.JOURNAL, Action.DELETE)
+    val permRoute = if (opening) Routes.OPENING_ENTRY else Routes.JOURNAL
+    val canNew = Session.can(permRoute, Action.NEW); val canDelete = Session.can(permRoute, Action.DELETE)
     var openLines by remember { mutableStateOf(emptyList<JournalLine>()) }
     LaunchedEffect(open) { openLines = open?.let { db.journal().linesOf(it.id) } ?: emptyList() }
 
     Scaffold(
-        topBar = { GoldTopBar("قيود اليومية", onBack) },
+        topBar = { GoldTopBar(if (opening) "القيود الافتتاحية" else "قيود اليومية", onBack) },
         snackbarHost = { SnackbarHost(snack) },
         floatingActionButton = { if (canNew) FloatingActionButton(onClick = onNew, containerColor = Gold.Primary) { Icon(Icons.Default.Add, "قيد جديد", tint = Color.White) } },
     ) { pad ->
@@ -87,7 +89,7 @@ fun JournalListScreen(db: AppDatabase, onNew: () -> Unit, onBack: () -> Unit) {
 private data class JLine(val key: Int, val account: Account? = null, val debit: String = "", val credit: String = "")
 
 @Composable
-fun JournalEntryScreen(db: AppDatabase, onBack: () -> Unit) {
+fun JournalEntryScreen(db: AppDatabase, opening: Boolean, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val snack = remember { SnackbarHostState() }
     val leaves by db.accounts().observeLeaves().collectAsState(emptyList())
@@ -104,7 +106,7 @@ fun JournalEntryScreen(db: AppDatabase, onBack: () -> Unit) {
     val balanced = diff == 0.0 && dr > 0
 
     Scaffold(
-        topBar = { GoldTopBar("قيد يومية جديد", onBack) },
+        topBar = { GoldTopBar(if (opening) "قيد افتتاحي جديد" else "قيد يومية جديد", onBack) },
         snackbarHost = { SnackbarHost(snack) },
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
@@ -117,7 +119,7 @@ fun JournalEntryScreen(db: AppDatabase, onBack: () -> Unit) {
                         scope.launch {
                             val data = lines.filter { it.account != null || it.debit.isNotBlank() || it.credit.isNotBlank() }
                                 .map { JournalLine(accountId = it.account?.id ?: 0L, debit = InvoiceMath.parse(it.debit), credit = InvoiceMath.parse(it.credit)) }
-                            runCatching { JournalRepository(db).saveManual(date, note, currency, data) }
+                            runCatching { JournalRepository(db).saveManual(date, note, currency, data, opening) }
                                 .onSuccess { onBack() }.onFailure { snack.showSnackbar(it.message ?: "تعذر الحفظ") }
                         }
                     }) { Text("حفظ القيد") }

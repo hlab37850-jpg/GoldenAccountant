@@ -13,7 +13,9 @@ interface AccountDao {
     @Query("SELECT * FROM accounts ORDER BY id") fun observeAll(): Flow<List<Account>>
     @Query("SELECT * FROM accounts WHERE id=:id") suspend fun byId(id: Long): Account?
     @Query("SELECT * FROM accounts WHERE parentId=:parent ORDER BY id") suspend fun children(parent: Long): List<Account>
-    @Query("SELECT * FROM accounts WHERE isGroup=0 ORDER BY name") fun observeLeaves(): Flow<List<Account>>
+    @Query("SELECT * FROM accounts WHERE isGroup=0 ORDER BY name") fun observeLeaves()
+    @Query("UPDATE accounts SET type=:type WHERE id=:id") suspend fun setType(id: Long, type: Int)
+    @Query("SELECT * FROM accounts WHERE isGroup=0 AND type IN (:types) ORDER BY name") fun observeByTypes(types: List<Int>): Flow<List<Account>>: Flow<List<Account>>
     @Query("UPDATE accounts SET name=:name WHERE id=:id") suspend fun rename(id: Long, name: String)
     @Query("DELETE FROM accounts WHERE id=:id") suspend fun delete(id: Long)
     @Query("SELECT COUNT(*) FROM accounts WHERE parentId=:id") suspend fun childCount(id: Long): Int
@@ -73,7 +75,7 @@ interface JournalDao {
     @Query("SELECT * FROM journal_lines WHERE journalId=:journalId ORDER BY id") suspend fun linesOf(journalId: Long): List<JournalLine>
     @Query("DELETE FROM journal_lines WHERE journalId=:id") suspend fun deleteLines(id: Long)
     @Query("DELETE FROM journal_headers WHERE id=:id") suspend fun deleteHeader(id: Long)
-    @Query("""SELECT h.id AS id, h.date AS date, h.note AS note, h.currencyId AS currencyId,
+    @Query("""SELECT h.id AS id, h.date AS date, h.note AS note, h.currencyId AS currencyId, h.kind AS kind,
               IFNULL((SELECT SUM(debit) FROM journal_lines WHERE journalId=h.id),0) AS total
               FROM journal_headers h WHERE h.refType=3 ORDER BY h.date DESC, h.id DESC""")
     fun observeManual(): Flow<List<JournalSummary>>
@@ -83,7 +85,7 @@ interface JournalDao {
 
 data class StatementRow(val date: String, val note: String, val kind: Int, val refType: Int, val refId: Long, val debit: Double, val credit: Double)
 data class PeriodTotal(val accountId: Long, val debit: Double, val credit: Double)
-data class JournalSummary(val id: Long, val date: String, val note: String, val currencyId: Long, val total: Double)
+data class JournalSummary(val id: Long, val date: String, val note: String, val currencyId: Long, val kind: Int, val total: Double)
 
 data class BillSummary(val count: Int, val subtotal: Double, val discount: Double, val tax: Double, val extra: Double) {
     val total: Double get() = Money.r(subtotal - discount + tax + extra)
@@ -109,6 +111,7 @@ interface BillDao {
 
 data class ItemQty(val itemId: Long, val qty: Double)
 data class MoveRow(val itemId: Long, val trType: Int, val isBack: Boolean, val qty: Double, val value: Double)
+data class ItemMove(val date: String, val trType: Int, val isBack: Boolean, val billNo: Int, val branchId: Long, val toBranchId: Long, val qty: Double, val price: Double, val remarks: String)
 data class TopItem(val name: String, val qty: Double, val amount: Double)
 
 @Dao
@@ -157,6 +160,23 @@ interface ItemDao {
                 ELSE 0 END),0) AS qty
               FROM bill_lines l JOIN bills b ON b.id=l.billId GROUP BY l.itemId""")
     suspend fun stockByBranch(branch: Long): List<ItemQty>
+
+    /** حركات صنف واحد في فترة (للتقرير): الكمية بالأساسية، موجبة = دخول، سالبة = خروج (حسب نوع الحركة). */
+    @Query("""SELECT b.date AS date, b.trType AS trType, b.isBack AS isBack, b.billNo AS billNo, b.branchId AS branchId, b.toBranchId AS toBranchId,
+              l.qty*l.unitFactor AS qty, l.price AS price, b.remarks AS remarks
+              FROM bill_lines l JOIN bills b ON b.id=l.billId
+              WHERE l.itemId=:itemId AND b.date BETWEEN :from AND :to ORDER BY b.date, b.id""")
+    suspend fun itemMoves(itemId: Long, from: String, to: String): List<ItemMove>
+
+    @Query("""SELECT IFNULL(SUM(CASE
+                WHEN b.trType IN (2,21) AND b.isBack=0 THEN l.qty*l.unitFactor
+                WHEN b.trType=1 AND b.isBack=1 THEN l.qty*l.unitFactor
+                WHEN b.trType IN (1,11) AND b.isBack=0 THEN -l.qty*l.unitFactor
+                WHEN b.trType=2 AND b.isBack=1 THEN -l.qty*l.unitFactor
+                WHEN b.trType=4 THEN l.qty*l.unitFactor
+                ELSE 0 END),0)
+              FROM bill_lines l JOIN bills b ON b.id=l.billId WHERE l.itemId=:itemId AND b.date<:before""")
+    suspend fun qtyBefore(itemId: Long, before: String): Double
     @Query("DELETE FROM items WHERE id=:id") suspend fun delete(id: Long)
     @Query("DELETE FROM item_units WHERE itemId=:itemId") suspend fun deleteUnits(itemId: Long)
     @Query("SELECT COUNT(*) FROM bill_lines WHERE itemId=:itemId") suspend fun usageCount(itemId: Long): Int
@@ -243,4 +263,28 @@ interface UserDao {
 interface ScreenDao {
     @Query("SELECT * FROM screens ORDER BY id") suspend fun all(): List<Screen>
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertAll(list: List<Screen>)
+}
+
+@Dao
+interface CusLimitDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(l: CusLimit)
+    @Query("DELETE FROM cus_limit WHERE accountId=:a AND currencyId=:c") suspend fun delete(a: Long, c: Long)
+    @Query("SELECT * FROM cus_limit") fun observeAll(): Flow<List<CusLimit>>
+    @Query("SELECT * FROM cus_limit WHERE accountId=:a AND currencyId=:c") suspend fun get(a: Long, c: Long): CusLimit?
+}
+
+@Dao
+interface SysConfDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun set(c: SysConf)
+    @Query("SELECT value FROM sys_conf WHERE `key`=:k") suspend fun get(k: String): String?
+    @Query("SELECT * FROM sys_conf") suspend fun all(): List<SysConf>
+}
+
+@Dao
+interface ItemPriceDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(p: ItemPrice)
+    @Query("DELETE FROM item_prices WHERE id=:id") suspend fun delete(id: Long)
+    @Query("SELECT * FROM item_prices WHERE itemId=:itemId ORDER BY date DESC, id DESC") fun observeFor(itemId: Long): Flow<List<ItemPrice>>
+    @Query("SELECT price FROM item_prices WHERE itemId=:itemId AND currencyId=:currencyId AND unitId=:unitId AND date<=:date ORDER BY date DESC, id DESC LIMIT 1")
+    suspend fun priceOn(itemId: Long, currencyId: Long, unitId: Long, date: String): Double?
 }

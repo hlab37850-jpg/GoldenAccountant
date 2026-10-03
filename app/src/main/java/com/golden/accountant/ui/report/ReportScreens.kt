@@ -212,15 +212,15 @@ fun StockReportScreen(db: AppDatabase, onBack: () -> Unit) {
     var data by remember { mutableStateOf<List<Triple<Item, Double, Double>>?>(null) }
     val moves by db.items().movementByItem().collectAsState(emptyList())   // يعيد الحساب عند أي حركة
     val branches by db.core().observeBranches().collectAsState(emptyList())
-    var branch by rememberSaveable { mutableLongStateOf(0L) }                  // 0 = كل الفروع
+    var branch by rememberSaveable { mutableLongStateOf(0L) }                  // 0 = كل المخازن
 
     LaunchedEffect(moves, branch) {
         val items = db.items().all()
         val pos = Valuation.positions(items, db.items().movementRowsUpTo("9999-12-31")).associateBy { it.itemId }
-        // كمية الفرع: الافتتاحي للفرع 1 + حركات الفرع (التحويل يخصم ويضيف). التكلفة المتوسطة عامة.
+        // كمية المخزن: الافتتاحي للمخزن 1 + حركات المخزن (التحويل يخصم ويضيف). التكلفة المتوسطة عامة.
         val perBranch = if (branch != 0L) db.items().stockByBranch(branch).associate { it.itemId to it.qty } else emptyMap()
         data = items.map {
-            val qty = if (branch == 0L) pos[it.id]?.qty ?: 0.0 else Money.r((if (branch == 1L) it.openingQty else 0.0) + (perBranch[it.id] ?: 0.0))
+            val qty = if (branch == 0L) pos[it.id]?.qty ?: 0.0 else Money.r((if (it.openingBranchId == branch) it.openingQty else 0.0) + (perBranch[it.id] ?: 0.0))
             Triple(it, qty, pos[it.id]?.avgCost ?: 0.0)
         }
     }
@@ -235,7 +235,7 @@ fun StockReportScreen(db: AppDatabase, onBack: () -> Unit) {
         Column(Modifier.fillMaxSize().padding(pad)) {
             OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth().padding(12.dp), label = { Text("بحث") }, singleLine = true)
             if (branches.size > 1) Row(Modifier.padding(horizontal = 12.dp).padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(branch == 0L, { branch = 0L }, { Text("كل الفروع") })
+                FilterChip(branch == 0L, { branch = 0L }, { Text("كل المخازن") })
                 branches.forEach { b -> FilterChip(branch == b.id, { branch = b.id }, { Text(b.name) }) }
             }
             Row(Modifier.fillMaxWidth().background(Gold.Primary).padding(8.dp)) {

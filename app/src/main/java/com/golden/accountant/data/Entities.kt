@@ -15,6 +15,8 @@ data class Account(
     val nature: Int,
     val isGroup: Boolean = false,
     val isSystem: Boolean = false,
+    /** نوع الحساب كما في القاعدة الأصلية: 0 عملاء، 1 موردون، 2 مبيعات ومشتريات، 4 نقدية، 5 مصروفات، 6 إيرادات، 7 أخرى. */
+    val type: Int = 7,
 )
 
 /** عميل أو مورد؛ لكل طرف حساب فرعي في الشجرة. */
@@ -65,6 +67,8 @@ data class Item(
     val openingQty: Double = 0.0,
     val openingCost: Double = 0.0,
     val openingDate: String = "",
+    /** المخزن الذي تقع فيه الكمية الافتتاحية (o_br_id). */
+    val openingBranchId: Long = 1,
     val salePrice: Double = 0.0,
     val currencyId: Long = 0,
     val isActive: Boolean = true,
@@ -82,6 +86,8 @@ data class Tax(
     val percent: Double,
     val isDefault: Boolean = false,
     val isActive: Boolean = true,
+    /** true = متضمن في السعر، false = غير متضمن (يُضاف). */
+    val included: Boolean = false,
 )
 
 @Entity(tableName = "branches")
@@ -138,9 +144,20 @@ data class Bill(
     val userId: Long = 0,
     /** للتحويل المخزني فقط: الفرع المستلم (branchId = الفرع المرسل). */
     val toBranchId: Long = 0,
+    /** خصم الفاتورة: 0 نسبة مئوية، 1 مبلغ؛ discountVal = القيمة المدخلة، discount = المبلغ الناتج. */
+    val discountType: Int = 1,
+    val discountVal: Double = 0.0,
+    val taxId: Long = 0,
+    val taxIncluded: Boolean = false,
+    /** حساب الرسوم (extraCost) — الافتراضي أجور نقل. */
+    val costAccountId: Long = -24L,
+    /** رقم الفاتورة الأصلية عند المرتجع. */
+    val refNo: String = "",
+    /** نوع التسوية المخزنية: 1 عجز، 2 زيادة، 3 تالف، 4 افتتاحي. */
+    val adjType: Int = 0,
 ) {
     /** الإجمالي المستحق = المجموع - الخصم + الضريبة + الرسوم. */
-    val total: Double get() = Money.r(subtotal - discount + taxAmount + extraCost)
+    val total: Double get() = if (taxIncluded) Money.r(subtotal - discount + extraCost) else Money.r(subtotal - discount + taxAmount + extraCost)
 }
 
 object BillType { const val CASH = 1; const val CREDIT = 2 }
@@ -157,6 +174,7 @@ data class BillLine(
     val cost: Double = 0.0,
     val discount: Double = 0.0,
     val remarks: String = "",
+    val expiry: String = "",
 ) { val lineTotal: Double get() = Money.r(qty * price - discount) }
 
 /** رأس قيد يومية؛ المبالغ بعملة القيد (currencyId). */
@@ -208,3 +226,19 @@ object Money {
     /** تقريب إلى 4 منازل لتفادي أخطاء الفاصلة العائمة عند الجمع. */
     fun r(v: Double): Double = Math.round(v * 10000.0) / 10000.0
 }
+
+/** سقف الحساب لكل عملة: الرصيد (مدين موجب) يجب أن يبقى بين -db و +cr. 0 = بلا سقف في ذلك الاتجاه. */
+@Entity(tableName = "cus_limit", primaryKeys = ["accountId", "currencyId"])
+data class CusLimit(val accountId: Long, val currencyId: Long, val cr: Double = 0.0, val db: Double = 0.0)
+
+/** إعدادات النظام (مفتاح/قيمة) كجدول sys_conf الأصلي. */
+@Entity(tableName = "sys_conf")
+data class SysConf(@PrimaryKey val key: String, val value: String)
+
+/** سعر بيع الصنف لكل عملة ووحدة بتاريخ سريان (item_price الأصلي): آخر سعر بتاريخ ≤ الفاتورة هو المعتمد. */
+@Entity(tableName = "item_prices", indices = [Index(value = ["itemId", "currencyId", "unitId", "date"], unique = true)])
+data class ItemPrice(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val itemId: Long, val currencyId: Long, val unitId: Long,
+    val price: Double, val date: String, val remarks: String = "",
+)

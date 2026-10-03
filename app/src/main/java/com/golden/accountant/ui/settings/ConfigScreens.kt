@@ -166,18 +166,18 @@ private fun TaxDialog(t: Tax?, onDismiss: () -> Unit, onSave: (Tax) -> Unit) {
     )
 }
 
-// ------------------------------------------------------------------ الفروع
+// ------------------------------------------------------------------ المخازن
 @Composable
 fun BranchesScreen(db: AppDatabase, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val branches by db.core().observeBranches().collectAsState(emptyList())
     var editing by remember { mutableStateOf<Branch?>(null) }
     var creating by remember { mutableStateOf(false) }
-    val canNew = Session.can(Routes.BRANCHES, Action.NEW); val canEdit = Session.can(Routes.BRANCHES, Action.EDIT)
+    val canNew = Session.can(Routes.WAREHOUSES, Action.NEW); val canEdit = Session.can(Routes.WAREHOUSES, Action.EDIT)
 
     Scaffold(
-        topBar = { GoldTopBar("الفروع", onBack) },
-        floatingActionButton = { if (canNew) FloatingActionButton(onClick = { creating = true }, containerColor = Gold.Primary) { Icon(Icons.Default.Add, "فرع جديد", tint = Color.White) } },
+        topBar = { GoldTopBar("إضافة مخزن", onBack) },
+        floatingActionButton = { if (canNew) FloatingActionButton(onClick = { creating = true }, containerColor = Gold.Primary) { Icon(Icons.Default.Add, "مخزن جديد", tint = Color.White) } },
     ) { pad ->
         LazyColumn(Modifier.fillMaxSize().padding(pad)) {
             items(branches, key = { it.id }) { b ->
@@ -199,7 +199,7 @@ private fun BranchDialog(b: Branch?, onDismiss: () -> Unit, onSave: (Branch) -> 
     var address by remember { mutableStateOf(b?.address ?: "") }
     var phone by remember { mutableStateOf(b?.phone ?: "") }
     AlertDialog(
-        onDismissRequest = onDismiss, title = { Text(if (b == null) "فرع جديد" else "تعديل الفرع") },
+        onDismissRequest = onDismiss, title = { Text(if (b == null) "مخزن جديد" else "تعديل المخزن") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it }, label = { Text("الاسم") }, singleLine = true)

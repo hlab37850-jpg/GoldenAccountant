@@ -38,7 +38,7 @@ fun BillListScreen(
         floatingActionButton = { FloatingActionButton(onClick = { onNew(kind) }, containerColor = Gold.Primary) { Icon(Icons.Default.Add, "جديد", tint = androidx.compose.ui.graphics.Color.White) } },
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
-            Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (family.size > 1) Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 family.forEach { k -> FilterChip(kind == k, { kind = k }, { Text(k.title) }) }
             }
             if (bills.isEmpty()) {

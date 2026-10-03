@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
                         // الزرع قبل شاشة الدخول: وإلا قد لا يوجد المدير فيعلق التشغيل الأول
                         Seeder.seedIfEmpty(db)
                         Seeder.syncScreens(db, Menu.allItems.map { it.route })
+                        com.golden.accountant.domain.Settings.load(db)
                         seeded = true
                     }
                     val c = crash

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.golden.accountant.data.AppDatabase
 import com.golden.accountant.domain.AuthRepository
 import com.golden.accountant.domain.Session
+import com.golden.accountant.domain.Settings
 import com.golden.accountant.ui.common.GoldTopBar
 import com.golden.accountant.ui.common.IconBadge
 import com.golden.accountant.ui.nav.Menu
@@ -35,6 +36,18 @@ fun SettingsScreen(db: AppDatabase, onNavigate: (String) -> Unit, onBack: () -> 
                 Text("المستخدم: ${Session.user?.name ?: ""}", Modifier.padding(16.dp), style = MaterialTheme.typography.titleSmall)
                 HorizontalDivider()
             }
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("تفعيل ضريبة القيمة المضافة", Modifier.weight(1f))
+                    Switch(Settings.vatEnabled, { on -> if (Session.isAdmin) scope.launch { Settings.setVat(db, on) } })
+                }
+                HorizontalDivider()
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("إظهار تاريخ الانتهاء للأصناف", Modifier.weight(1f))
+                    Switch(Settings.showEndDate, { on -> if (Session.isAdmin) scope.launch { Settings.setShowEndDate(db, on) } })
+                }
+                HorizontalDivider()
+            }
             items(Menu.settings.filter { Session.can(it.route) }) { s ->
                 Row(Modifier.fillMaxWidth().clickable { onNavigate(s.route) }.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(s.icon); Spacer(Modifier.width(14.dp)); Text(s.title, Modifier.weight(1f))
@@ -50,7 +63,7 @@ fun SettingsScreen(db: AppDatabase, onNavigate: (String) -> Unit, onBack: () -> 
                     IconBadge(Icons.Default.Person); Spacer(Modifier.width(14.dp)); Text("تسجيل الخروج", Modifier.weight(1f), color = MaterialTheme.colorScheme.error)
                 }
                 HorizontalDivider()
-                Text("المحاسب الذهبي — الإصدار 1.0.1", Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
+                Text("المحاسب الذهبي — الإصدار 1.1.0", Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall)
             }
         }
     }

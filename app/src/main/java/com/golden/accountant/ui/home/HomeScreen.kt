@@ -24,6 +24,7 @@ import com.golden.accountant.domain.Session
 import com.golden.accountant.domain.Sys
 import com.golden.accountant.ui.Gold
 import com.golden.accountant.ui.common.CollapsibleSection
+import com.golden.accountant.ui.common.MenuRow
 import com.golden.accountant.ui.nav.Menu
 import com.golden.accountant.ui.nav.Routes
 import java.text.SimpleDateFormat
@@ -32,12 +33,6 @@ import java.util.Locale
 
 private data class Tile(val title: String, val icon: ImageVector, val route: String)
 
-private val tiles = listOf(
-    Tile("المبيعات", Icons.Default.ShoppingCart, Routes.SALES),
-    Tile("المشتريات", Icons.Default.Star, Routes.PURCHASE),
-    Tile("قبض / صرف", Icons.Default.Email, Routes.RECEIPT),
-    Tile("الحسابات", Icons.Default.AccountBox, Routes.ACCOUNTS),
-)
 
 @Composable
 fun HomeScreen(db: AppDatabase, onNavigate: (String) -> Unit, onOpenDrawer: () -> Unit) {
@@ -75,7 +70,7 @@ fun HomeScreen(db: AppDatabase, onNavigate: (String) -> Unit, onOpenDrawer: () -
 
         Column(Modifier.padding(12.dp)) {
             // البلاطات الأربع
-            tiles.filter { Session.can(it.route) }.chunked(2).forEach { row ->
+            Menu.tiles.filter { Session.can(it.route) }.map { Tile(it.title, it.icon, it.route) }.chunked(2).forEach { row ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { t -> TileCard(t, Modifier.weight(1f)) { onNavigate(t.route) } }
                 }
@@ -83,6 +78,7 @@ fun HomeScreen(db: AppDatabase, onNavigate: (String) -> Unit, onOpenDrawer: () -
             Spacer(Modifier.height(8.dp))
             // الأقسام القابلة للطي
             Menu.visibleSections().forEach { CollapsibleSection(it, onNavigate) }
+            Menu.backup.filter { Session.can(it.route) }.forEach { MenuRow(it, onNavigate) }
             Spacer(Modifier.height(24.dp))
         }
     }
